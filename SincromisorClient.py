@@ -54,6 +54,7 @@ if __name__ == "__main__":
         audio_player=audio_player,
         offer_url=config.offer_url,
         ice_server=config.ice_server,
+        talk_mode=config.talk_mode,
         shutdown_event=shutdown_event,
     )
 

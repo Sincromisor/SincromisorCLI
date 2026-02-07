@@ -18,17 +18,20 @@ from . import AudioPlayer
 
 
 class SincromisorRTCClient:
+    # talk_mode: chat, sincro
     def __init__(
         self,
         audio_sender_track: AudioStreamTrack,
         audio_player: AudioPlayer,
         offer_url: str,
         ice_server: str,
+        talk_mode: str,
         shutdown_event: Event = Event(),
     ):
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.offer_url: str = offer_url
         self.ice_server: str = ice_server
+        self.talk_mode: str = talk_mode
         self.shutdown_event: Event = shutdown_event
         self.rpc: RTCPeerConnection = RTCPeerConnection(
             configuration=RTCConfiguration(iceServers=[RTCIceServer(self.ice_server)])
@@ -121,6 +124,7 @@ class SincromisorRTCClient:
             json={
                 "sdp": self.rpc.localDescription.sdp,
                 "type": self.rpc.localDescription.type,
+                "talk_mode": self.talk_mode,
             },
         )
         if response.status_code != 200:

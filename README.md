@@ -12,10 +12,21 @@
 
 ### 依存ライブラリのインストール
 
+```sh
+$ sudo apt install libportaudio2
+```
+
 Pythonパッケージ管理には[uv](https://github.com/astral-sh/uv)を使用しています。
 
 ```sh
 $ uv sync
+```
+
+### WSL2の場合の追加インストール
+PortAudioがPulseAudio経由で音声入出力できるよう、ライブラリを追加でインストールする必要があります。
+
+```sh
+$ sudo apt install libasound2-plugins
 ```
 
 ### サウンドデバイスのテスト
@@ -48,9 +59,10 @@ Default Output Device:
 
 SincromisorClientの設定ファイルを作成します。
 
-* `examples/config.yml`をコピーし、環境に合わせて`offer_url`と`ice_server`を編集してください。
+* `examples/config.yml`をコピーし、環境に合わせて`offer_url`と`ice_server`、`talk_mode`を編集してください。
 * `sender_device`と`receiver_device`の`device`については、`null`にしておくとOSのデフォルトのものが選ばれます。
 * 各デバイスのチャンネル数やサンプリングレート、データ型、ブロックサイズは、そのままにしておいてください。
+* talk_modeは`sincro`もしくは`talk`のいずれかです。
 
 ```sh
 $ cp examples/config.yml .
@@ -59,6 +71,7 @@ $ cp examples/config.yml .
 ```yaml
 offer_url: "https://sincromisor.example.com/offer"
 ice_server: "stun:stun.example.com:3478"
+talk_mode: "sincro"
 sender_device:
     channels: 1
     samplerate: 48000

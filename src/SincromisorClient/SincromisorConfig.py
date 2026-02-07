@@ -1,5 +1,7 @@
 import yaml
 import sounddevice as sd
+
+from enum import Enum
 from pydantic import BaseModel, HttpUrl, Field, field_validator
 
 
@@ -82,10 +84,14 @@ class AudioOutputDeviceConfig(AudioDeviceConfig):
             raise ValueError("output channels must be 2.")
         return value
 
+class SincromisorTalkMode(str, Enum):
+    chat = 'chat'
+    sincro = 'sincro'
 
 class SincromisorClientConfig(BaseModel):
     offer_url: HttpUrl
     ice_server: str
+    talk_mode: SincromisorTalkMode
     sender_device: AudioInputDeviceConfig
     receiver_device: AudioOutputDeviceConfig
 
