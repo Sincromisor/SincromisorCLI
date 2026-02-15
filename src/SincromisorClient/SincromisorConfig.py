@@ -13,7 +13,7 @@ class AudioDeviceConfig(BaseModel):
     device: str | None = Field(default=None)
 
     @classmethod
-    def default_device(cls) -> str:
+    def default_device(cls) -> str | None:
         return None
 
     @field_validator("device", mode="before")
@@ -49,7 +49,7 @@ class AudioDeviceConfig(BaseModel):
 
 class AudioInputDeviceConfig(AudioDeviceConfig):
     @classmethod
-    def default_device(cls) -> str:
+    def default_device(cls) -> str | None:
         default_device: int = sd.default.device[0]
         if default_device < 0:
             return None
@@ -68,7 +68,7 @@ class AudioInputDeviceConfig(AudioDeviceConfig):
 
 class AudioOutputDeviceConfig(AudioDeviceConfig):
     @classmethod
-    def default_device(cls) -> str:
+    def default_device(cls) -> str | None:
         default_device: int = sd.default.device[1]
         if default_device < 0:
             return None
