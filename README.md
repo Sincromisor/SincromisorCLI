@@ -59,7 +59,8 @@ Default Output Device:
 
 SincromisorClientの設定ファイルを作成します。
 
-* `examples/config.yml`をコピーし、環境に合わせて`offer_url`と`ice_server`、`talk_mode`を編集してください。
+* `examples/config.yml`をコピーし、環境に合わせて`offer_url`と`candidate_url`、`ice_server`、`talk_mode`を編集してください。
+  * `candidate_url`を省略した場合は、`offer_url`の末尾`/offer`を`/candidate`に置換して利用します。
 * `sender_device`と`receiver_device`の`device`については、`null`にしておくとOSのデフォルトのものが選ばれます。
 * 各デバイスのチャンネル数やサンプリングレート、データ型、ブロックサイズは、そのままにしておいてください。
 * talk_modeは`sincro`もしくは`talk`のいずれかです。
@@ -70,6 +71,7 @@ $ cp examples/config.yml .
 
 ```yaml
 offer_url: "https://sincromisor.example.com/offer"
+candidate_url: "https://sincromisor.example.com/candidate"
 ice_server: "stun:stun.example.com:3478"
 talk_mode: "sincro"
 sender_device:

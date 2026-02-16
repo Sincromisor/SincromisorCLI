@@ -90,10 +90,20 @@ class SincromisorTalkMode(str, Enum):
 
 class SincromisorClientConfig(BaseModel):
     offer_url: HttpUrl
+    candidate_url: HttpUrl | None = None
     ice_server: str
     talk_mode: SincromisorTalkMode
     sender_device: AudioInputDeviceConfig
     receiver_device: AudioOutputDeviceConfig
+
+    @property
+    def resolved_candidate_url(self) -> str:
+        if self.candidate_url is not None:
+            return str(self.candidate_url)
+        offer_url = str(self.offer_url)
+        if offer_url.endswith("/offer"):
+            return offer_url[:-len("/offer")] + "/candidate"
+        return offer_url.rstrip("/") + "/candidate"
 
     @classmethod
     def from_yaml(cls, yaml_path) -> "SincromisorClientConfig":

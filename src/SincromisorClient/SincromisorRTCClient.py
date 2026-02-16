@@ -11,7 +11,9 @@ from aiortc import (
     AudioStreamTrack,
     RTCDataChannel,
     MediaStreamTrack,
+    RTCIceCandidate,
 )
+from aiortc.sdp import candidate_to_sdp
 from aiortc.mediastreams import MediaStreamError
 from av.audio.frame import AudioFrame
 from . import AudioPlayer
@@ -24,15 +26,19 @@ class SincromisorRTCClient:
         audio_sender_track: AudioStreamTrack,
         audio_player: AudioPlayer,
         offer_url: str,
+        candidate_url: str,
         ice_server: str,
         talk_mode: str,
         shutdown_event: Event = Event(),
     ):
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.offer_url: str = offer_url
+        self.candidate_url: str = candidate_url
         self.ice_server: str = ice_server
         self.talk_mode: str = talk_mode
         self.shutdown_event: Event = shutdown_event
+        self.session_id: str | None = None
+        self.pending_ice_candidates: list[dict | None] = []
         self.rpc: RTCPeerConnection = RTCPeerConnection(
             configuration=RTCConfiguration(iceServers=[RTCIceServer(self.ice_server)])
         )
@@ -42,6 +48,7 @@ class SincromisorRTCClient:
         self.text_ch: RTCDataChannel = self.__setup_text_ch()
         self.telop_ch: RTCDataChannel = self.__setup_telop_ch()
         self.current_ice_state:str = ''
+        self.__setup_icecandidate()
 
     async def run(self) -> None:
         await self.__offer()
@@ -111,6 +118,8 @@ class SincromisorRTCClient:
             [self.rpc.localDescription.type, self.rpc.localDescription.sdp]
         )
         answer = self.__post_offer()
+        self.session_id = answer.get("session_id")
+        await self.__flush_pending_ice_candidates()
         await self.rpc.setRemoteDescription(
             RTCSessionDescription(sdp=answer["sdp"], type=answer["type"])
         )
@@ -132,6 +141,50 @@ class SincromisorRTCClient:
             self.logger.error(msg)
             raise msg
         return response.json()
+
+    def __setup_icecandidate(self) -> None:
+        @self.rpc.on("icecandidate")
+        async def on_icecandidate(candidate: RTCIceCandidate | None):
+            await self.__send_ice_candidate(self.__serialize_ice_candidate(candidate))
+
+    def __serialize_ice_candidate(
+        self, candidate: RTCIceCandidate | None
+    ) -> dict | None:
+        if candidate is None:
+            return None
+        candidate_sdp = candidate_to_sdp(candidate).strip()
+        if candidate_sdp == "":
+            return None
+        return {
+            "candidate": f"candidate:{candidate_sdp}",
+            "sdpMid": candidate.sdpMid,
+            "sdpMLineIndex": candidate.sdpMLineIndex,
+        }
+
+    async def __flush_pending_ice_candidates(self) -> None:
+        pending = self.pending_ice_candidates
+        self.pending_ice_candidates = []
+        for candidate in pending:
+            await self.__send_ice_candidate(candidate)
+
+    async def __send_ice_candidate(self, candidate: dict | None) -> None:
+        if self.session_id is None:
+            self.pending_ice_candidates.append(candidate)
+            return
+        await asyncio.to_thread(self.__post_candidate, candidate)
+
+    def __post_candidate(self, candidate: dict | None) -> None:
+        response = requests.post(
+            self.candidate_url,
+            json={
+                "session_id": self.session_id,
+                "candidate": candidate,
+            },
+        )
+        if response.status_code != 200:
+            self.logger.warning(
+                f"Candidate response was invalid - {response.status_code}",
+            )
 
     # データチャンネルに動きがあった際のイベントハンドラ。
     # ここをoverrideしていろいろやるとよいと思います。
