@@ -59,20 +59,26 @@ Default Output Device:
 
 SincromisorClientの設定ファイルを作成します。
 
-* `examples/config.yml`をコピーし、環境に合わせて`offer_url`と`candidate_url`、`ice_server`、`talk_mode`を編集してください。
+* `examples/config.yml`をコピーし、環境に合わせて`config_url`（推奨）または`offer_url` / `candidate_url` / `ice_server` / `ice_servers`、`talk_mode`を編集してください。
+  * `config_url`には Sincromisor の `GET /api/v1/RTCSignalingServer/config.json` を指定します。
+  * `config_url`を指定すると、`offerURL` / `candidateURL` / `iceServers` をサーバー設定から自動取得します。
   * `candidate_url`を省略した場合は、`offer_url`の末尾`/offer`を`/candidate`に置換して利用します。
 * `sender_device`と`receiver_device`の`device`については、`null`にしておくとOSのデフォルトのものが選ばれます。
 * 各デバイスのチャンネル数やサンプリングレート、データ型、ブロックサイズは、そのままにしておいてください。
-* talk_modeは`sincro`もしくは`talk`のいずれかです。
+* talk_modeは`sincro`もしくは`chat`のいずれかです。
 
 ```sh
 $ cp examples/config.yml .
 ```
 
 ```yaml
-offer_url: "https://sincromisor.example.com/offer"
-candidate_url: "https://sincromisor.example.com/candidate"
-ice_server: "stun:stun.example.com:3478"
+config_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/config.json"
+# 明示指定したい場合のみ以下を使う（config_url指定時は通常不要）
+# offer_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/offer"
+# candidate_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/candidate"
+# ice_server: "stun:stun.example.com:3478"
+# ice_servers:
+#   - urls: ["stun:stun.example.com:3478"]
 talk_mode: "sincro"
 sender_device:
     channels: 1

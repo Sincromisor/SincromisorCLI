@@ -52,9 +52,10 @@ if __name__ == "__main__":
     scli: SincromisorRTCClient = CustomizedSincromisorClient(
         audio_sender_track=audio_sender_track,
         audio_player=audio_player,
-        offer_url=config.offer_url,
+        offer_url=str(config.offer_url),
         candidate_url=config.resolved_candidate_url,
         ice_server=config.ice_server,
+        ice_servers=config.resolved_ice_servers,
         talk_mode=config.talk_mode,
         shutdown_event=shutdown_event,
     )

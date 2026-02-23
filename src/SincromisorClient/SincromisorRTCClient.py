@@ -3,6 +3,7 @@ import asyncio
 from asyncio import Event
 import logging
 import requests
+from typing import Any
 from aiortc import (
     RTCPeerConnection,
     RTCSessionDescription,
@@ -27,20 +28,27 @@ class SincromisorRTCClient:
         audio_player: AudioPlayer,
         offer_url: str,
         candidate_url: str,
-        ice_server: str,
+        ice_server: str | None,
         talk_mode: str,
+        ice_servers: list[dict[str, Any]] | None = None,
         shutdown_event: Event = Event(),
     ):
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.offer_url: str = offer_url
         self.candidate_url: str = candidate_url
-        self.ice_server: str = ice_server
+        self.ice_server: str | None = ice_server
+        self.ice_servers: list[dict[str, Any]] | None = ice_servers
         self.talk_mode: str = talk_mode
         self.shutdown_event: Event = shutdown_event
         self.session_id: str | None = None
         self.pending_ice_candidates: list[dict | None] = []
         self.rpc: RTCPeerConnection = RTCPeerConnection(
-            configuration=RTCConfiguration(iceServers=[RTCIceServer(self.ice_server)])
+            configuration=RTCConfiguration(
+                iceServers=self.__build_ice_servers(
+                    ice_server=self.ice_server,
+                    ice_servers=self.ice_servers,
+                )
+            )
         )
         self.player: AudioPlayer = audio_player
         self.rpc.addTrack(audio_sender_track)
@@ -49,6 +57,27 @@ class SincromisorRTCClient:
         self.telop_ch: RTCDataChannel = self.__setup_telop_ch()
         self.current_ice_state:str = ''
         self.__setup_icecandidate()
+
+    def __build_ice_servers(
+        self,
+        ice_server: str | None,
+        ice_servers: list[dict[str, Any]] | None,
+    ) -> list[RTCIceServer]:
+        if ice_servers:
+            servers: list[RTCIceServer] = []
+            for conf in ice_servers:
+                # Sincromisor config.json の iceServers を aiortc 用オブジェクトへ変換する。
+                servers.append(
+                    RTCIceServer(
+                        urls=conf["urls"],
+                        username=conf.get("username"),
+                        credential=conf.get("credential"),
+                    )
+                )
+            return servers
+        if ice_server:
+            return [RTCIceServer(ice_server)]
+        return []
 
     async def run(self) -> None:
         await self.__offer()

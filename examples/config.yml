@@ -1,7 +1,10 @@
-offer_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/offer"
-# 省略時はoffer_urlの末尾 /offer を /candidate に置換して利用
-candidate_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/candidate"
-ice_server: "stun:stun.example.com:3478"
+config_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/config.json"
+# 明示指定が必要な場合のみ利用（config_url指定時は通常不要）
+# offer_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/offer"
+# candidate_url: "https://sincromisor.example.com/api/v1/RTCSignalingServer/candidate"
+# ice_server: "stun:stun.example.com:3478"
+# ice_servers:
+#   - urls: ["stun:stun.example.com:3478"]
 talk_mode: "sincro"
 sender_device:
     channels: 1
