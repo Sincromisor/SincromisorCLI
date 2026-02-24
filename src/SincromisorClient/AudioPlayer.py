@@ -29,12 +29,13 @@ class AudioPlayer:
             device=self.device,
             callback=self.__callback,
         )
-        self.audio_output.start()
+        self.started: bool = False
         print("start AudioPlayer")
 
     def __callback(
         self, outdata: np.ndarray, frames: int, time, status: sd.CallbackFlags
     ) -> None:
+        outdata.fill(0)
         try:
             frame: np.ndarray = self.queue.get_nowait()
         except Empty:
@@ -44,11 +45,21 @@ class AudioPlayer:
     def add_frame(self, frame: AudioFrame):
         array = frame.to_ndarray()
         self.queue.put(array)
+        self.__ensure_started()
 
     def add_numpy_frame(self, frame: np.ndarray):
         self.queue.put(frame)
+        self.__ensure_started()
+
+    def __ensure_started(self) -> None:
+        if self.started:
+            return
+        self.audio_output.start()
+        self.started = True
 
     def close(self):
+        if self.started:
+            self.audio_output.stop()
         self.audio_output.close()
 
 

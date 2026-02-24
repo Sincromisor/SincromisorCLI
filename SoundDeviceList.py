@@ -26,7 +26,7 @@ print("\nOutput Devices:")
 for idx, device in output_devices:
     show_device(idx=idx, device=device)
 
-print(f"\nDefault Input Device:")
+print("\nDefault Input Device:")
 default_idev_idx = sd.default.device[0]
 if default_idev_idx >= 0:
     show_device(default_idev_idx, devices[default_idev_idx])
