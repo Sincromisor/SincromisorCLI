@@ -11,6 +11,7 @@ from src.SincromisorClient import (
 )
 from multiprocessing import freeze_support
 
+
 class CustomizedSincromisorClient(SincromisorRTCClient):
     async def text_ch_on_message(self, channel: RTCDataChannel, message: str) -> None:
         print([channel.label, json.loads(message)])
@@ -29,7 +30,6 @@ if __name__ == "__main__":
     logger: logging.Logger = logging.getLogger("SincromisorClient")
 
     config = SincromisorClientConfig.from_yaml("config.yml")
-    print(config)
     shutdown_event: Event = Event()
 
     audio_sender_track: AudioStreamTrack = AudioSenderTrack(
@@ -60,19 +60,21 @@ if __name__ == "__main__":
         shutdown_event=shutdown_event,
     )
 
+    loop: AbstractEventLoop = asyncio.get_event_loop()
     try:
-        loop: AbstractEventLoop = asyncio.get_event_loop()
         loop.run_until_complete(scli.run())
     except KeyboardInterrupt:
         pass
 
-    logger.info("send ShutdownEvent")
-    shutdown_event.set()
-    logger.info("close SincromisorClient")
-    loop.run_until_complete(scli.close())
-    logger.info("close SenderTrack")
-    audio_sender_track.close()
-    logger.info("close AudioPlayer")
-    audio_player.close()
-    loop.close()
-    print("done.")
+    finally:
+        # シグナリング失敗時も録音プロセスと再生デバイスを回収する。
+        logger.info("send ShutdownEvent")
+        shutdown_event.set()
+        logger.info("close SincromisorClient")
+        loop.run_until_complete(scli.close())
+        logger.info("close SenderTrack")
+        audio_sender_track.close()
+        logger.info("close AudioPlayer")
+        audio_player.close()
+        loop.close()
+        print("done.")

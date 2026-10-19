@@ -4,7 +4,14 @@ import sounddevice as sd
 
 from enum import Enum
 from urllib.parse import urljoin
-from pydantic import BaseModel, HttpUrl, Field, field_validator, model_validator, ConfigDict
+from pydantic import (
+    BaseModel,
+    HttpUrl,
+    Field,
+    field_validator,
+    model_validator,
+    ConfigDict,
+)
 
 
 class AudioDeviceConfig(BaseModel):
@@ -86,9 +93,10 @@ class AudioOutputDeviceConfig(AudioDeviceConfig):
             raise ValueError("output channels must be 2.")
         return value
 
+
 class SincromisorTalkMode(str, Enum):
-    chat = 'chat'
-    sincro = 'sincro'
+    chat = "chat"
+    sincro = "sincro"
 
 
 class RTCIceServerConfig(BaseModel):
@@ -126,8 +134,6 @@ class SincromisorClientConfig(BaseModel):
     def validate_signaling_settings(self):
         if self.offer_url is None:
             raise ValueError("offer_url is required (or specify config_url).")
-        if not self.ice_server and not self.ice_servers:
-            raise ValueError("ice_server or ice_servers is required (or specify config_url).")
         return self
 
     @property
@@ -138,7 +144,7 @@ class SincromisorClientConfig(BaseModel):
             raise ValueError("offer_url is not resolved.")
         offer_url = str(self.offer_url)
         if offer_url.endswith("/offer"):
-            return offer_url[:-len("/offer")] + "/candidate"
+            return offer_url[: -len("/offer")] + "/candidate"
         return offer_url.rstrip("/") + "/candidate"
 
     @property
@@ -147,7 +153,8 @@ class SincromisorClientConfig(BaseModel):
             return [ice_server.to_aiortc_kwargs() for ice_server in self.ice_servers]
         if self.ice_server:
             return [{"urls": self.ice_server}]
-        raise ValueError("ice_server(s) is not resolved.")
+        # STUN/TURNを使わない同一ネットワーク接続では空配列が正しい。
+        return []
 
     @classmethod
     def _merge_signaling_config(cls, data: dict) -> dict:

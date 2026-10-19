@@ -4,9 +4,9 @@
 
 ## 必要なもの
 
-* [Sincromisorサーバー](https://github.com/Phenomer/Sincromisor)
-* 音声入出力デバイスをもつ環境
-* サーバーに到達できるネットワーク
+- [Sincromisorサーバー](https://github.com/Phenomer/Sincromisor)
+- 音声入出力デバイスをもつ環境
+- サーバーに到達できるネットワーク
 
 ## インストール
 
@@ -23,6 +23,7 @@ $ uv sync
 ```
 
 ### WSL2の場合の追加インストール
+
 PortAudioがPulseAudio経由で音声入出力できるよう、ライブラリを追加でインストールする必要があります。
 
 ```sh
@@ -59,13 +60,14 @@ Default Output Device:
 
 SincromisorClientの設定ファイルを作成します。
 
-* `examples/config.yml`をコピーし、環境に合わせて`config_url`（推奨）または`offer_url` / `candidate_url` / `ice_server` / `ice_servers`、`talk_mode`を編集してください。
-  * `config_url`には Sincromisor の `GET /api/v1/RTCSignalingServer/config.json` を指定します。
-  * `config_url`を指定すると、`offerURL` / `candidateURL` / `iceServers` をサーバー設定から自動取得します。
-  * `candidate_url`を省略した場合は、`offer_url`の末尾`/offer`を`/candidate`に置換して利用します。
-* `sender_device`と`receiver_device`の`device`については、`null`にしておくとOSのデフォルトのものが選ばれます。
-* 各デバイスのチャンネル数やサンプリングレート、データ型、ブロックサイズは、そのままにしておいてください。
-* talk_modeは`sincro`もしくは`chat`のいずれかです。
+- `examples/config.yml`をコピーし、環境に合わせて`config_url`（推奨）または`offer_url` / `candidate_url` / `ice_server` / `ice_servers`、`talk_mode`を編集してください。
+    - `config_url`には Sincromisor の `GET /api/v1/RTCSignalingServer/config.json` を指定します。
+    - `config_url`を指定すると、`offerURL` / `candidateURL` / `iceServers` をサーバー設定から自動取得します。
+    - `iceServers: []`やICEサーバー未指定も利用できます。STUN/TURNを使わない、相互に到達可能なネットワーク向けです。
+    - `candidate_url`を省略した場合は、`offer_url`の末尾`/offer`を`/candidate`に置換して利用します。
+- `sender_device`と`receiver_device`の`device`については、`null`にしておくとOSのデフォルトのものが選ばれます。
+- 各デバイスのチャンネル数やサンプリングレート、データ型、ブロックサイズは、そのままにしておいてください。
+- talk_modeは`sincro`もしくは`chat`のいずれかです。
 
 ```sh
 $ cp examples/config.yml .
@@ -143,4 +145,25 @@ class CustomizedSincromisorClient(SincromisorRTCClient):
 
     async def telop_ch_on_message(self, channel: RTCDataChannel, message: str) -> None:
         print([channel.label, json.loads(message)])
+```
+
+## RTC互換性の確認
+
+現行のGo/Pion RTCサーバーに対応しています。初回Offerには要求UUIDと改訂番号を付け、
+`text_ch`は順序と再送を保証し、`telop_ch`は順序を保証せず再送しません。
+aiortcはICE候補を収集したSDPをOfferに含めます。ICE候補を個別送信する経路も改訂番号を付けます。
+HTTPエラー・ICE失敗時は接続を閉じて終了します。自動再接続は行いません。
+
+音声デバイスを使わない回帰テストは、リポジトリのルートで実行します。
+
+```sh
+uv run python -m unittest discover -s tests -v
+```
+
+実サーバーとの確認では、専用のRTCサーバーを`assets/playback/default/`のあるディレクトリから起動し、
+到達可能なシグナリングURLを指定します。`echo`で合成音声の往復、`playback`で音声・テキスト・テロップの受信を確認します。
+この試験は下流の音声認識・LLM・音声合成サービスと音声デバイスを使いません。
+
+```sh
+SINCRO_RTC_TEST_URL=http://127.0.0.1:18088/api/v1/RTCSignalingServer uv run python -m unittest discover -s tests -v
 ```
